@@ -29,6 +29,34 @@ const Navbar = () => {
     { href: "/#about", label: "About" },
   ];
 
+  const isActiveLink = (href: string) => {
+    if (href === "/") return location.pathname === "/" && !location.hash;
+    const [path, hash] = href.split("#");
+    if (path && path !== location.pathname) return false;
+    return location.hash === `#${hash}`;
+  };
+
+  const handleNavClick = (href: string) => {
+    // If we're not on home, navigate normally so routing happens first
+    if (href.startsWith("/#") && location.pathname !== "/") {
+      navigate(href);
+      return;
+    }
+
+    if (href.startsWith("/#")) {
+      const [, hash] = href.split("#");
+      const target = document.getElementById(hash);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth" });
+      } else {
+        // Fallback to changing location so the browser attempts to resolve later
+        window.location.href = href;
+      }
+    } else {
+      navigate(href);
+    }
+  };
+
   const getDashboardLink = () => {
     if (user?.role === "player") return "/player";
     if (user?.role === "owner") return "/owner";
@@ -41,26 +69,25 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:scale-110">
-              <span className="text-primary-foreground font-display text-lg">K</span>
-            </div>
-            <span className="font-display text-xl text-foreground">
+            <span className="font-display text-xl text-foreground transition-transform group-hover:scale-105">
               Kora<span className="text-primary">Link</span>
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            {!isAuthenticated && navLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className={`nav-link ${location.pathname === link.href ? "active text-foreground" : ""}`}
-              >
-                {link.label}
-              </Link>
+          <ul className="hidden md:flex items-center gap-8">
+            {navLinks.map((link) => (
+              <li key={link.href} className="list-none">
+                <button
+                  type="button"
+                  onClick={() => handleNavClick(link.href)}
+                  className={`nav-link ${isActiveLink(link.href) ? "active text-foreground" : ""}`}
+                >
+                  {link.label}
+                </button>
+              </li>
             ))}
-          </div>
+          </ul>
 
           {/* Auth Buttons / User Menu */}
           <div className="hidden md:flex items-center gap-4">
@@ -120,16 +147,22 @@ const Navbar = () => {
         {isOpen && (
           <div className="md:hidden py-4 border-t border-border animate-fade-in">
             <div className="flex flex-col gap-4">
-              {!isAuthenticated && navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors py-2"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ))}
+              <ul className="flex flex-col gap-2 list-none m-0 p-0">
+                {navLinks.map((link) => (
+                  <li key={link.href} className="list-none">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleNavClick(link.href);
+                        setIsOpen(false);
+                      }}
+                      className="text-muted-foreground hover:text-foreground transition-colors py-2 inline-block text-left w-full"
+                    >
+                      {link.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
               {isAuthenticated ? (
                 <>
                   <Link
